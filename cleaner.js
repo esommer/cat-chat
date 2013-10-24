@@ -4,7 +4,7 @@ var urlParser = require('url');
 var WebSocketServer = require('ws').Server;
 
 
-var dataStore = {};
+//var dataStore = {};
 
 var requestHandler = function (request, response) {
 	var path = urlParser.parse(request.url).pathname.toString().replace(/^\//, '');
@@ -43,42 +43,55 @@ User.prototype.send = function (message) {
 	}
 	else {
 		console.log(activeUsers[this.id][this.name]);
-		//broadcast("<<" + activeUsers[this.id][this.name] + " has left >>");
-		//delete activeUsers[this.id];
 	}
 }
+
+var ReceivedMessage = function (message) {
+	this.obj = JSON.parse(message);
+	this.msgType = this.obj['msgType'];
+	this.senderID = this.obj['id'];
+	this.msgBody = this.obj['message'];
+	this.senderName = this.obj['name'];
+}
+
+var MessageToSend = function (messageType, messageText, sender) {
+	this.obj = {
+		'msgType' : messageType ,
+		'message' : messageText
+	}
+	if (sender) this.obj['from'] = sender.name;
+	return this.obj;
+};
 
 ws_server.on('connection', function (socket) {
 	var user = new User(socket);
 	activeUsers[user.id] = user;
 	user.send('Welcome to the room, ');
 	user.socket.on('message', function (message) {
-		// if (message === "<<STOP>>") {
-		// 	broadcast("<< " + user.name + " has left >>");
-		// 	delete activeUsers[user.id];
-		// }
+		var msg = new ReceivedMessage (message);
 		if (user.state == 'newbie') {
-			user.name = JSON.parse(message)['name'];
+			user.name = msg.senderName;
 			console.log('new user: ' + user.name);
-			broadcast('<< just joined >>', user);
 			user.state = 'pro';
 		}
 		else {
-			console.log('received: ' + message);
-			broadcast(message, user);
+			console.log('received: ' + msg.msgBody);
+			broadcast('text', msg.msgBody, user);
 		}
 	})
 });
 
-var broadcast = function (message, user) {
+var broadcast = function (messageType, messageText, sender) {
 	for (var key in activeUsers) {
-		if (activeUsers[key] == user) {
-			if (user.state == 'pro') {
-				user.send("me: " + message);
+		if (activeUsers[key] == sender) {
+			if (sender.state == 'pro') {
+				var msg = new MessageToSend (messageType, messageText);
+				sender.send(JSON.stringify(msg));
 			}
 		} 
 		else {
-			activeUsers[key].send(user.name + ": " + message);
+			var msg = new MessageToSend (messageType, messageText, sender);
+			activeUsers[key].send(JSON.stringify(msg));
 		}
 	}
 };
