@@ -37,12 +37,20 @@ var User = function (socket) {
 	this.state = 'newbie';
 }
 
-User.prototype.send = function (message) {
+User.prototype.send = function (messageType, messageText, senderName) {
+	var msgObj = {
+		'msgType' : messageType ,
+		'message' : messageText ,
+		'from' : senderName
+	}
+	var data = JSON.stringify(msgObj);
+
 	if (this.socket.readyState === 1) {
-		this.socket.send(message);
+		this.socket.send(data);
 	}
 	else {
 		console.log(activeUsers[this.id][this.name]);
+		// TO DO: remove user from active list
 	}
 }
 
@@ -54,19 +62,10 @@ var ReceivedMessage = function (message) {
 	this.senderName = this.obj['name'];
 }
 
-var MessageToSend = function (messageType, messageText, sender) {
-	this.obj = {
-		'msgType' : messageType ,
-		'message' : messageText
-	}
-	if (sender) this.obj['from'] = sender.name;
-	return this.obj;
-};
-
 ws_server.on('connection', function (socket) {
 	var user = new User(socket);
 	activeUsers[user.id] = user;
-	user.send('Welcome to the room, ');
+	user.send('onEnter', 'Welcome to the room, ', 'self');
 	user.socket.on('message', function (message) {
 		var msg = new ReceivedMessage (message);
 		if (user.state == 'newbie') {
@@ -76,28 +75,25 @@ ws_server.on('connection', function (socket) {
 		}
 		else {
 			console.log('received: ' + msg.msgBody);
-			broadcast('text', msg.msgBody, user);
+			broadcast('text', msg.msgBody, user.name);
 		}
 	})
 });
 
 var broadcast = function (messageType, messageText, sender) {
+	var senderName = (typeof sender == "string")? sender: sender.name;
 	for (var key in activeUsers) {
-		if (activeUsers[key] == sender) {
-			if (sender.state == 'pro') {
-				var msg = new MessageToSend (messageType, messageText);
-				sender.send(JSON.stringify(msg));
-			}
-		} 
-		else {
-			var msg = new MessageToSend (messageType, messageText, sender);
-			activeUsers[key].send(JSON.stringify(msg));
-		}
+		activeUsers[key].send(messageType, messageText, senderName);
 	}
 };
 
 
 
+
+
+
+
+// BASIC HTTP SERVER STUFF:
 
 var getFile = function (path, response, callback) {
 	var fileType = getFileType(path);

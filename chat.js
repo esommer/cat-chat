@@ -17,25 +17,33 @@ window.onload = function () {
 		this.from = this.obj['from'];
 	}
 
-	var MessageToSend = function (messageType, messageText, name) {
-		this.obj = {
+	var sendMessage = function (messageType, messageText, name) {
+		var msgObj = {
 			'from' : userID ,
 			'msgType' : messageType ,
 			'message' : messageText
 		}
-		if (name) this.obj['name'] = name;
-		return this.obj;
+		if (name) msgObj['name'] = name;
+		var data = JSON.stringify(msgObj);
+		socket.send(data);
 	};
 
-	var filterIncoming = function (message) {
-		var msg = new ReceivedMessage (message);
-		if (msg.from) {
-			msg.msgBody = "<b>" + msg.msgBody.replace(":",":</b>");
+	var buildMsgLi = function (message) {
+		var msg = new ReceivedMessage(message);
+		var newli = document.createElement('li');
+		var msgHTML = "";
+		if (msg.from !== userName) {
+			msgHTML = "<b>" + msg.from + ":</b> " + msg.msgBody;
 		}
-		if (msg.msgType == 'status') {
-			msg.msgBody = "<span class='status'>" + msg.msgBody + "</span>";
+		else {
+			msgHTML = msg.msgBody;
+			newli.className = 'self';
 		}
-		return msg.msgBody;
+		if (msg.msgType == 'userStatus') {
+			newli.className = 'status';
+		}
+		newli.innerHTML = msgHTML;
+		return newli;
 	};
 	
 	start.addEventListener('click', function (event) {
@@ -44,28 +52,23 @@ window.onload = function () {
 		socket = new WebSocket ("ws://emilys-macbook-pro.local:8300");
 		socket.onopen = function () {
 			userName = prompt("What's your name?");
-			var msg = new MessageToSend ('enter','opening connection', userName);
-			socket.send(JSON.stringify(msg));
+			sendMessage('enter','opening connection', userName);
 		};
 		var newUser = 'new';
 		
 		// prepare to receive messages
 		socket.onmessage = function (message) {
 			if (newUser === 'new') {
-				titleArea.innerHTML = message.data + userName + "!";
-				newUser = 'once';
+				var msg = new ReceivedMessage (message.data);
+				titleArea.innerHTML = msg.msgBody + userName + "!";
+				newUser = 'old';
 				chatbox.className = '';
 				stop.className = '';
 				start.className = 'hidden';
 				chats.className = '';
 			}
 			else {
-				var fancymessage = filterIncoming(message.data);
-				var newli = document.createElement('li');
-				newli.innerHTML = fancymessage;
-				if (message.data.search('me:') == 0) {
-					newli.className = 'right';
-				}
+				var newli = buildMsgLi(message.data);
 				chats.appendChild(newli);
 				var scroll = chats.scrollTop + 50;
 				chats.scrollTop = scroll;
@@ -88,8 +91,7 @@ window.onload = function () {
 	
 	chatbox.addEventListener('keydown', function (event) {
 		if (event.keyCode == 13 && socket.readyState == 1) {
-			var msg = new MessageToSend ('text', chatbox.value);
-			socket.send(JSON.stringify(msg));
+			sendMessage('text', chatbox.value);
 			chatbox.value = "";
 		}
 	});
