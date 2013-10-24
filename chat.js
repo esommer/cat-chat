@@ -28,8 +28,7 @@ window.onload = function () {
 		socket.send(data);
 	};
 
-	var buildMsgLi = function (message) {
-		var msg = new ReceivedMessage(message);
+	var buildMsgLi = function (msg) {
 		var newli = document.createElement('li');
 		var msgHTML = "";
 		if (msg.from !== userName) {
@@ -39,7 +38,7 @@ window.onload = function () {
 			msgHTML = msg.msgBody;
 			newli.className = 'self';
 		}
-		if (msg.msgType == 'userStatus') {
+		if (msg.msgType == 'status') {
 			newli.className = 'status';
 		}
 		newli.innerHTML = msgHTML;
@@ -58,20 +57,33 @@ window.onload = function () {
 		
 		// prepare to receive messages
 		socket.onmessage = function (message) {
-			if (newUser === 'new') {
-				var msg = new ReceivedMessage (message.data);
-				titleArea.innerHTML = msg.msgBody + userName + "!";
-				newUser = 'old';
-				chatbox.className = '';
-				stop.className = '';
-				start.className = 'hidden';
-				chats.className = '';
-			}
-			else {
-				var newli = buildMsgLi(message.data);
-				chats.appendChild(newli);
-				var scroll = chats.scrollTop + 50;
-				chats.scrollTop = scroll;
+			var msg = new ReceivedMessage (message.data);
+			switch (msg.msgType) {
+				case ('welcome'):
+					titleArea.innerHTML = msg.msgBody + userName + "!";
+					chatbox.className = '';
+					stop.className = '';
+					start.className = 'hidden';
+					chats.className = '';
+					break;
+				case ('error'):
+					switch (msg.msgBody) {
+						case ('username already in use'):
+							userName = prompt("That username was already in use. Please choose another: ");
+							sendMessage('enter', 'opening connection', userName);
+							break;
+						default:
+							break;
+					}
+					break;
+				case ('text'):
+					var newli = buildMsgLi(msg);
+					chats.appendChild(newli);
+					var scroll = chats.scrollTop + 50;
+					chats.scrollTop = scroll;
+					break;
+				default:
+					break;
 			}
 		}
 	});	

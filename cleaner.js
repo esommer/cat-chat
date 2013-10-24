@@ -31,10 +31,9 @@ var ws_server = new WebSocketServer ({server : server});
 var activeUsers = {};
 
 var User = function (socket) {
-	this.id = socket.upgradeReq.headers['sec-websocket-key'];
+	//this.id = socket.upgradeReq.headers['sec-websocket-key'];
 	this.socket = socket;
 	this.name = "";
-	this.state = 'newbie';
 }
 
 User.prototype.send = function (messageType, messageText, senderName) {
@@ -49,7 +48,7 @@ User.prototype.send = function (messageType, messageText, senderName) {
 		this.socket.send(data);
 	}
 	else {
-		console.log(activeUsers[this.id][this.name]);
+		console.log(activeUsers[this.name] + " left chat");
 		// TO DO: remove user from active list
 	}
 }
@@ -64,14 +63,24 @@ var ReceivedMessage = function (message) {
 
 ws_server.on('connection', function (socket) {
 	var user = new User(socket);
-	activeUsers[user.id] = user;
-	user.send('onEnter', 'Welcome to the room, ', 'self');
+	//activeUsers[user.id] = user;
+	//user.send('onEnter', 'Welcome to the room, ', 'self');
 	user.socket.on('message', function (message) {
 		var msg = new ReceivedMessage (message);
-		if (user.state == 'newbie') {
-			user.name = msg.senderName;
-			console.log('new user: ' + user.name);
-			user.state = 'pro';
+		if (msg.msgType == 'enter' && user.name !== msg.from) {
+			// check unique username:
+			if (activeUsers[msg.senderName]) {
+				// username already taken, send response back
+				user.send('error', 'username already in use', 'server');
+			}
+			else {
+				user.name = msg.senderName;
+				activeUsers[user.name] = user;
+				console.log('new user: ' + user.name);
+				user.send('welcome', 'Welcome to the room, ', user.name);
+				broadcast('status', msg.senderName + ' entered', 'server');
+				broadcast('userList', Object.keys(activeUsers), 'server');
+			}
 		}
 		else {
 			console.log('received: ' + msg.msgBody);
