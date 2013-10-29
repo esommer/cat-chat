@@ -4,7 +4,6 @@ var urlParser = require('url');
 var WebSocketServer = require('ws').Server;
 
 
-//var dataStore = {};
 
 var requestHandler = function (request, response) {
 	var path = urlParser.parse(request.url).pathname.toString().replace(/^\//, '');
@@ -20,18 +19,20 @@ var requestHandler = function (request, response) {
 };
 
 var server = http.createServer(requestHandler);
-
 server.listen(8300, "emilys-macbook-pro.local");
 console.log('Server running at http://127.0.0.1:8300');
 console.log('Server PID: ' + process.pid);
 //server.on('request', requestHandler (request, response));
 
 
+
+
+// CHAT SERVER:
+
 var ws_server = new WebSocketServer ({server : server});
 var activeUsers = {};
 
 var User = function (socket) {
-	//this.id = socket.upgradeReq.headers['sec-websocket-key'];
 	this.socket = socket;
 	this.name = "";
 }
@@ -43,47 +44,51 @@ User.prototype.send = function (messageType, messageText, senderName) {
 		'from' : senderName
 	}
 	var data = JSON.stringify(msgObj);
-
 	if (this.socket.readyState === 1) {
 		this.socket.send(data);
 	}
 	else {
-		console.log(activeUsers[this.name] + " left chat");
-		// TO DO: remove user from active list
+		this.exit();
 	}
+}
+
+User.prototype.exit = function () {
+	this.socket.close();
+	console.log(this.name + " left chat");
+	delete activeUsers[this.name];
+	broadcast('userList', Object.keys(activeUsers), 'server');
 }
 
 var ReceivedMessage = function (message) {
 	this.obj = JSON.parse(message);
 	this.msgType = this.obj['msgType'];
-	this.senderID = this.obj['id'];
 	this.msgBody = this.obj['message'];
-	this.senderName = this.obj['name'];
+	this.from = this.obj['from'];
 }
 
 ws_server.on('connection', function (socket) {
 	var user = new User(socket);
-	//activeUsers[user.id] = user;
-	//user.send('onEnter', 'Welcome to the room, ', 'self');
+
 	user.socket.on('message', function (message) {
 		var msg = new ReceivedMessage (message);
 		if (msg.msgType == 'enter' && user.name !== msg.from) {
 			// check unique username:
-			if (activeUsers[msg.senderName]) {
+			if (activeUsers[msg.from] || msg.from == 'server') {
 				// username already taken, send response back
 				user.send('error', 'username already in use', 'server');
 			}
 			else {
-				user.name = msg.senderName;
+				user.name = msg.from;
 				activeUsers[user.name] = user;
 				console.log('new user: ' + user.name);
 				user.send('welcome', 'Welcome to the room, ', user.name);
-				broadcast('status', msg.senderName + ' entered', 'server');
 				broadcast('userList', Object.keys(activeUsers), 'server');
 			}
 		}
+		else if (msg.msgType == 'exit') {
+			activeUsers[msg.from].exit();
+		}
 		else {
-			console.log('received: ' + msg.msgBody);
 			broadcast('text', msg.msgBody, user.name);
 		}
 	})
