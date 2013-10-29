@@ -5,11 +5,17 @@
 	<script src="chat.js"></script>
 </head>
 <body>
-	<h2 id="titlearea">Might you want to chat?</h2>
-	<input id="chatbox" type="text" value="type a message here" class="hidden" />
-	<input id="start" type="submit" value="join" />
-	<input id="stop" type="submit" value="exit" class="hidden" />
-	<br />
-	<ul id="chats" class="hidden"></ul>
+	<div id="chatcontainer">
+		<h2 id="titlearea">Might you want to chat?</h2>
+		<input id="chatbox" type="text" value="type a message here" class="hidden" />
+		<input id="start" type="submit" value="join" />
+		<input id="stop" type="submit" value="exit" class="hidden" />
+		<br />
+		<ul id="chats" class="hidden"></ul>
+	</div>
+	<div id="chatters" class="hidden">
+		<h5>Online now:</h5>
+		<ul id="chatterlist"></ul>
+	</div>
 </body>
 </html>
