@@ -6,27 +6,29 @@ window.onload = function () {
 	var start = document.getElementById("start");
 	var stop = document.getElementById("stop");
 	var titleArea = document.getElementById("titlearea");
+	var chatterList = document.getElementById("chatterlist");
+	var chatters = document.getElementById("chatters");
 	var socket = {};
 	var userName = "";
-	var userID = "";
+
+	start.focus();
 	
+	var sendMessage = function (messageType, messageText, name) {
+		var msgObj = {
+			'from' : userName ,
+			'msgType' : messageType ,
+			'message' : messageText
+		}
+		var data = JSON.stringify(msgObj);
+		socket.send(data);
+	};
+
 	var ReceivedMessage = function (message) {
 		this.obj = JSON.parse(message);
 		this.msgType = this.obj['msgType'];
 		this.msgBody = this.obj['message'];
 		this.from = this.obj['from'];
 	}
-
-	var sendMessage = function (messageType, messageText, name) {
-		var msgObj = {
-			'from' : userID ,
-			'msgType' : messageType ,
-			'message' : messageText
-		}
-		if (name) msgObj['name'] = name;
-		var data = JSON.stringify(msgObj);
-		socket.send(data);
-	};
 
 	var buildMsgLi = function (msg) {
 		var newli = document.createElement('li');
@@ -38,72 +40,101 @@ window.onload = function () {
 			msgHTML = msg.msgBody;
 			newli.className = 'self';
 		}
-		if (msg.msgType == 'status') {
-			newli.className = 'status';
-		}
+		// if (msg.msgType == 'status') {
+		// 	newli.className = 'status';
+		// }
 		newli.innerHTML = msgHTML;
-		return newli;
+		chats.appendChild(newli);
+		var scroll = chats.scrollTop + 50;
+		chats.scrollTop = scroll;
 	};
+
+	var updateUsers = function (msgBody) {
+		chatterList.innerHTML = "";
+		for (var key in msgBody) {
+			var userli = document.createElement('li');
+			userli.innerHTML = msgBody[key];
+			chatterList.appendChild(userli);
+		}
+	}
+
+	var setChatState = function (state) {
+		if (state == 'on') {
+			chatbox.className = '';
+			stop.className = '';
+			start.className = 'hidden';
+			chats.className = '';
+			chatters.className = '';
+		} else {
+			stop.className = 'hidden';
+			start.className = '';
+			chats.className = 'hidden';
+			chatbox.className = 'hidden';
+			titleArea.innerHTML = "Might you want to chat?";
+			chatters.className = 'hidden';
+		}
+	}
 	
+	var handleMessage = function (msg) {
+		switch (msg.msgType) {
+			case ('welcome'):
+				titleArea.innerHTML = msg.msgBody + userName + "!";
+				setChatState('on');
+				chatbox.focus();
+				break;
+			case ('error'):
+				// handle error messages
+				switch (msg.msgBody) {
+					case ('username already in use'):
+						userName = prompt("That username was already in use. Please choose another: ");
+						sendMessage('enter', 'opening connection', userName);
+						break;
+					default:
+						break;
+				}
+				break;
+			case ('text'):
+				buildMsgLi(msg);
+				break;
+			case ('userList'): 
+				updateUsers(msg.msgBody);
+				break;
+			default:
+				break;
+		}
+	}
+
 	start.addEventListener('click', function (event) {
-		
-		// build socket
 		socket = new WebSocket ("ws://emilys-macbook-pro.local:8300");
 		socket.onopen = function () {
 			userName = prompt("What's your name?");
 			sendMessage('enter','opening connection', userName);
 		};
-		var newUser = 'new';
-		
-		// prepare to receive messages
 		socket.onmessage = function (message) {
 			var msg = new ReceivedMessage (message.data);
-			switch (msg.msgType) {
-				case ('welcome'):
-					titleArea.innerHTML = msg.msgBody + userName + "!";
-					chatbox.className = '';
-					stop.className = '';
-					start.className = 'hidden';
-					chats.className = '';
-					break;
-				case ('error'):
-					switch (msg.msgBody) {
-						case ('username already in use'):
-							userName = prompt("That username was already in use. Please choose another: ");
-							sendMessage('enter', 'opening connection', userName);
-							break;
-						default:
-							break;
-					}
-					break;
-				case ('text'):
-					var newli = buildMsgLi(msg);
-					chats.appendChild(newli);
-					var scroll = chats.scrollTop + 50;
-					chats.scrollTop = scroll;
-					break;
-				default:
-					break;
-			}
+			handleMessage(msg);
 		}
 	});	
 	
 	stop.addEventListener('click', function (event) {
+		// DISCONNECT: if socket is open, tell server to cut you off, close, re-hide ui elements
 		if (socket.readyState == 1) {
-			socket.send("<<STOP>>");
+			sendMessage('exit','',userName);
 			socket.close();
-			stop.className = 'hidden';
-			start.className = '';
+			setChatState('off');
 		}
 	});
 	
 	chatbox.addEventListener('focus', function (event) {
+		// clear input box on entry
 		chatbox.value = "";
 	})
 	
 	chatbox.addEventListener('keydown', function (event) {
+		// send message on "enter" in input box
 		if (event.keyCode == 13 && socket.readyState == 1) {
 			sendMessage('text', chatbox.value);
+			// reset input box
 			chatbox.value = "";
 		}
 	});
