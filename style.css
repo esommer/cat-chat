@@ -3,13 +3,34 @@ body {
 	font-family: Helvetica, sans-serif;
 	font-size: 28px;
 	font-weight: 300;
-	width: 60%;
+	width: 70%;
 	margin-left: auto;
 	margin-right: auto;
 	margin-top: 80px;
 }
+div#chatcontainer {
+	width: 75%;
+	float: left;
+	margin-right: 40px;
+}
+div#chatters {
+	float: right;
+	margin-right: 20px;
+}
+div#chatters h5 {
+	margin-bottom: 15px;
+}
+ul#chatterlist li {
+	font-size: 24px;
+	font-weight: normal;
+	margin-bottom: 10px;
+	color: #33A158;
+}
+ul#chatterlist {
+	margin-top: 0px;
+}
 input#chatbox {
-	width: 600px;
+	width: 550px;
 	height: 50px;
 	border: 1px solid #ccc;
 	font-family: Helvetica, sans-serif;
@@ -30,9 +51,9 @@ li {
 	margin-left: none;
 	list-style-type: none;
 }
-/*.hidden {
+.hidden {
 	display: none;
-}*/
+}
 .self {
 	text-align: right;
 	font-size: 24px;
