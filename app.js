@@ -19,7 +19,8 @@ var requestHandler = function (request, response) {
 };
 
 var server = http.createServer(requestHandler);
-server.listen(8300, "emilys-macbook-pro.local");
+//server.listen(8300, "emilys-macbook-pro.local");
+server.listen(process.env.PORT);
 console.log('Server running at emilys-macbook-pro.local:8300');
 console.log('Server PID: ' + process.pid);
 //server.on('request', requestHandler (request, response));
@@ -112,7 +113,7 @@ var broadcast = function (messageType, messageText, sender) {
 var getFile = function (path, response, callback) {
 	var fileType = getFileType(path);
 	file.readFile(path, function (error, data) {
-		if (error) { 
+		if (error) {
 			console.log(error);
 			buildResponse(response, undefined, undefined, error);
 		}
