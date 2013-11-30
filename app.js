@@ -20,7 +20,7 @@ var requestHandler = function (request, response) {
 
 var server = http.createServer(requestHandler);
 server.listen(8300, "emilys-macbook-pro.local");
-console.log('Server running at http://127.0.0.1:8300');
+console.log('Server running at emilys-macbook-pro.local:8300');
 console.log('Server PID: ' + process.pid);
 //server.on('request', requestHandler (request, response));
 
