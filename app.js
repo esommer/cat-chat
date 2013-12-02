@@ -19,11 +19,9 @@ var requestHandler = function (request, response) {
 };
 
 var server = http.createServer(requestHandler);
-//server.listen(8300, "emilys-macbook-pro.local");
 server.listen(process.env.PORT);
-console.log('Server running at emilys-macbook-pro.local:8300');
+console.log('Server running at ' + process.env.PORT);
 console.log('Server PID: ' + process.pid);
-//server.on('request', requestHandler (request, response));
 
 
 
