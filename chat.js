@@ -1,6 +1,6 @@
 //HOSTNAME
 window.onload = function () {
-	
+
 	var chats = document.getElementById("chats");
 	var chatbox = document.getElementById("chatbox");
 	var start = document.getElementById("start");
@@ -12,7 +12,7 @@ window.onload = function () {
 	var userName = "";
 
 	start.focus();
-	
+
 	var sendMessage = function (messageType, messageText, name) {
 		var msgObj = {
 			'from' : userName ,
@@ -74,7 +74,7 @@ window.onload = function () {
 			chatters.className = 'hidden';
 		}
 	}
-	
+
 	var handleMessage = function (msg) {
 		switch (msg.msgType) {
 			case ('welcome'):
@@ -96,7 +96,7 @@ window.onload = function () {
 			case ('text'):
 				buildMsgLi(msg);
 				break;
-			case ('userList'): 
+			case ('userList'):
 				updateUsers(msg.msgBody);
 				break;
 			default:
@@ -105,7 +105,8 @@ window.onload = function () {
 	}
 
 	start.addEventListener('click', function (event) {
-		socket = new WebSocket ("ws://emilys-macbook-pro.local:8300");
+		var location = window.location.href.replace('http:','').replace('/chat.html','');
+		socket = new WebSocket ("ws:" + location);
 		socket.onopen = function () {
 			userName = prompt("What's your name?");
 			sendMessage('enter','opening connection', userName);
@@ -114,8 +115,8 @@ window.onload = function () {
 			var msg = new ReceivedMessage (message.data);
 			handleMessage(msg);
 		}
-	});	
-	
+	});
+
 	stop.addEventListener('click', function (event) {
 		// DISCONNECT: if socket is open, tell server to cut you off, close, re-hide ui elements
 		if (socket.readyState == 1) {
@@ -124,12 +125,12 @@ window.onload = function () {
 			setChatState('off');
 		}
 	});
-	
+
 	chatbox.addEventListener('focus', function (event) {
 		// clear input box on entry
 		chatbox.value = "";
 	})
-	
+
 	chatbox.addEventListener('keydown', function (event) {
 		// send message on "enter" in input box
 		if (event.keyCode == 13 && socket.readyState == 1) {
