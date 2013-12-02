@@ -106,7 +106,7 @@ window.onload = function () {
 
 	start.addEventListener('click', function (event) {
 		var location = window.location.href.replace('http:','').replace('/chat.html','');
-		socket = new WebSocket ("ws:" + location);
+		socket = new WebSocket ("ws:" + location, , {protocolVersion: 8, origin: 'http://herokuapp.com'});
 		socket.onopen = function () {
 			userName = prompt("What's your name?");
 			sendMessage('enter','opening connection', userName);
